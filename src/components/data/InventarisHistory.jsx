@@ -1,53 +1,60 @@
-"use client";
+import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { Edit, Trash2, Image } from "lucide-react";
+import tendaImg from "../../assets/tenda.png";
+import matrasImg from "../../assets/matras.png";
+import mejaImg from "../../assets/meja.png";
+import kursiImg from "../../assets/kursi.png";
 
-import { useState } from "react";
-import { Search, Filter } from "lucide-react";
-import EditModal from "./edit-modal";
-import DeleteModal from "./delete-modal";
-import AddModal from "./add-modal";
-import ImagePreviewModal from "./image-preview-modal";
+const initialData = [
+  {
+    kode: "BKD01",
+    nama: "Tenda Max 4 Orang",
+    jumlah: 50,
+    harga: 135000,
+    gambar: tendaImg,
+  },
+  {
+    kode: "BKD02",
+    nama: "Matras Camping",
+    jumlah: 50,
+    harga: 15000,
+    gambar: matrasImg,
+  },
+  {
+    kode: "BKD03",
+    nama: "Meja Camping",
+    jumlah: 50,
+    harga: 25000,
+    gambar: mejaImg,
+  },
+  {
+    kode: "BKD04",
+    nama: "Kursi Camping",
+    jumlah: 100,
+    harga: 25000,
+    gambar: kursiImg,
+  },
+];
 
-export default function InventoryTable() {
-  const [searchQuery, setSearchQuery] = useState("");
+export default function InventoryList() {
+  const [inventory, setInventory] = useState([]);
+  const [searchTerm, setSearchTerm] = useState("");
   const [showEditModal, setShowEditModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [showAddModal, setShowAddModal] = useState(false);
-  const [showImagePreview, setShowImagePreview] = useState(false);
+  const [showImageModal, setShowImageModal] = useState(false);
   const [selectedItem, setSelectedItem] = useState(null);
-  const [items, setItems] = useState([
-    {
-      id: "BKD01",
-      name: "Tenda Max 4 Orang",
-      quantity: 50,
-      price: 135000,
-      image: null,
-      imageUrl: "/placeholder.svg",
-    },
-    {
-      id: "BKD02",
-      name: "Matras Camping",
-      quantity: 50,
-      price: 15000,
-      image: null,
-      imageUrl: "/placeholder.svg",
-    },
-    {
-      id: "BKD03",
-      name: "Meja Camping",
-      quantity: 50,
-      price: 25000,
-      image: null,
-      imageUrl: "/placeholder.svg",
-    },
-    {
-      id: "BKD04",
-      name: "Kursi Camping",
-      quantity: 100,
-      price: 25000,
-      image: null,
-      imageUrl: "/placeholder.svg",
-    },
-  ]);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const storedInventory = JSON.parse(localStorage.getItem("inventory"));
+    if (!storedInventory) {
+      localStorage.setItem("inventory", JSON.stringify(initialData));
+      setInventory(initialData);
+    } else {
+      setInventory(storedInventory);
+    }
+  }, []);
 
   const handleEdit = (item) => {
     setSelectedItem(item);
@@ -61,49 +68,31 @@ export default function InventoryTable() {
 
   const handleImageClick = (item) => {
     setSelectedItem(item);
-    setShowImagePreview(true);
+    setShowImageModal(true);
   };
 
   const handleUpdateItem = (updatedItem) => {
-    setItems(
-      items.map((item) =>
-        item.id === updatedItem.id
-          ? {
-              ...updatedItem,
-              imageUrl: updatedItem.image
-                ? URL.createObjectURL(updatedItem.image)
-                : updatedItem.imageUrl,
-            }
-          : item
-      )
+    const updatedInventory = inventory.map((item) =>
+      item.kode === updatedItem.kode ? updatedItem : item
     );
+    setInventory(updatedInventory);
+    localStorage.setItem("inventory", JSON.stringify(updatedInventory));
     setShowEditModal(false);
   };
 
   const handleDeleteConfirm = () => {
-    setItems(items.filter((item) => item.id !== selectedItem.id));
+    const updatedInventory = inventory.filter(
+      (item) => item.kode !== selectedItem.kode
+    );
+    setInventory(updatedInventory);
+    localStorage.setItem("inventory", JSON.stringify(updatedInventory));
     setShowDeleteModal(false);
   };
 
-  const handleAddItem = (newItem) => {
-    const itemId = `BKD${items.length + 1}`.padStart(5, "0");
-    setItems([
-      ...items,
-      {
-        ...newItem,
-        id: itemId,
-        imageUrl: newItem.image
-          ? URL.createObjectURL(newItem.image)
-          : "/placeholder.svg",
-      },
-    ]);
-    setShowAddModal(false);
-  };
-
-  const filteredItems = items.filter(
+  const filteredInventory = inventory.filter(
     (item) =>
-      item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      item.id.toLowerCase().includes(searchQuery.toLowerCase())
+      item.nama.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      item.kode.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   return (
@@ -115,103 +104,59 @@ export default function InventoryTable() {
       </p>
 
       <div className="flex justify-between items-center mb-6">
-        <div className="text-sm text-gray-600">
-          Total barang saat ini: {items.length} pcs
-        </div>
+        <p>Total barang saat ini: {inventory.length} pcs</p>
         <div className="flex gap-4">
-          <div className="relative">
-            <input
-              type="text"
-              placeholder="Pencarian"
-              className="pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
-            <Search className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
-          </div>
-          <button className="flex items-center gap-2 px-4 py-2 border rounded-lg hover:bg-gray-50">
-            <Filter className="h-5 w-5" />
-            Filter
-          </button>
+          <input
+            type="text"
+            placeholder="Pencarian"
+            className="border rounded-lg px-4 py-2"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+          <button className="bg-gray-200 px-4 py-2 rounded-lg">Filter</button>
         </div>
       </div>
 
-      <div className="overflow-x-auto bg-white rounded-lg shadow">
+      <div className="bg-white rounded-lg shadow overflow-x-auto">
         <table className="w-full">
-          <thead className="bg-gray-50">
-            <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Gambar
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Kode
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Nama Barang
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Jumlah
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Harga
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Aksi
-              </th>
+          <thead>
+            <tr className="bg-gray-50">
+              <th className="px-6 py-3 text-left">GAMBAR</th>
+              <th className="px-6 py-3 text-left">KODE</th>
+              <th className="px-6 py-3 text-left">NAMA BARANG</th>
+              <th className="px-6 py-3 text-left">JUMLAH</th>
+              <th className="px-6 py-3 text-left">HARGA</th>
+              <th className="px-6 py-3 text-left">AKSI</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-200">
-            {filteredItems.map((item) => (
-              <tr key={item.id}>
+          <tbody>
+            {filteredInventory.map((item) => (
+              <tr key={item.kode} className="border-t">
                 <td className="px-6 py-4">
                   <img
-                    src={item.imageUrl}
-                    alt={item.name}
-                    className="h-12 w-12 rounded object-cover cursor-pointer"
+                    src={item.gambar}
+                    alt={item.nama}
+                    className="w-16 h-16 object-cover cursor-pointer"
                     onClick={() => handleImageClick(item)}
                   />
                 </td>
-                <td className="px-6 py-4">{item.id}</td>
-                <td className="px-6 py-4">{item.name}</td>
-                <td className="px-6 py-4">{item.quantity}</td>
-                <td className="px-6 py-4">Rp {item.price.toLocaleString()}</td>
+                <td className="px-6 py-4">{item.kode}</td>
+                <td className="px-6 py-4">{item.nama}</td>
+                <td className="px-6 py-4">{item.jumlah}</td>
+                <td className="px-6 py-4">Rp {item.harga.toLocaleString()}</td>
                 <td className="px-6 py-4">
                   <div className="flex gap-2">
                     <button
                       onClick={() => handleEdit(item)}
-                      className="p-2 text-white bg-green-500 rounded-lg hover:bg-green-600"
+                      className="bg-green-500 text-white p-2 rounded hover:bg-green-600"
                     >
-                      <svg
-                        className="w-5 h-5"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth="2"
-                          d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
-                        />
-                      </svg>
+                      <Edit size={16} />
                     </button>
                     <button
                       onClick={() => handleDelete(item)}
-                      className="p-2 text-white bg-orange-500 rounded-lg hover:bg-orange-600"
+                      className="bg-orange-500 text-white p-2 rounded hover:bg-orange-600"
                     >
-                      <svg
-                        className="w-5 h-5"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth="2"
-                          d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                        />
-                      </svg>
+                      <Trash2 size={16} />
                     </button>
                   </div>
                 </td>
@@ -221,43 +166,121 @@ export default function InventoryTable() {
         </table>
       </div>
 
-      <div className="mt-6 flex justify-center">
+      <div className="flex justify-center mt-6">
         <button
-          onClick={() => setShowAddModal(true)}
-          className="px-4 py-2 bg-green-700 text-white rounded-lg hover:bg-green-800"
+          onClick={() => navigate("/kelola-inventaris")}
+          className="bg-green-500 text-white px-6 py-2 rounded-lg hover:bg-green-600"
         >
           Tambah Barang
         </button>
       </div>
 
+      {/* Edit Modal */}
       {showEditModal && (
-        <EditModal
-          item={selectedItem}
-          onClose={() => setShowEditModal(false)}
-          onUpdate={handleUpdateItem}
-        />
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full">
+            <h2 className="text-xl font-bold mb-4">Edit Barang</h2>
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                handleUpdateItem({
+                  ...selectedItem,
+                  nama: e.target.nama.value,
+                  jumlah: parseInt(e.target.jumlah.value),
+                  harga: parseInt(e.target.harga.value),
+                });
+              }}
+              className="space-y-4"
+            >
+              <div>
+                <label className="block mb-1">Nama Barang</label>
+                <input
+                  name="nama"
+                  defaultValue={selectedItem.nama}
+                  className="w-full border rounded px-3 py-2"
+                />
+              </div>
+              <div>
+                <label className="block mb-1">Jumlah</label>
+                <input
+                  name="jumlah"
+                  type="number"
+                  defaultValue={selectedItem.jumlah}
+                  className="w-full border rounded px-3 py-2"
+                />
+              </div>
+              <div>
+                <label className="block mb-1">Harga</label>
+                <input
+                  name="harga"
+                  type="number"
+                  defaultValue={selectedItem.harga}
+                  className="w-full border rounded px-3 py-2"
+                />
+              </div>
+              <div className="flex justify-end gap-4">
+                <button
+                  type="button"
+                  onClick={() => setShowEditModal(false)}
+                  className="px-4 py-2 bg-gray-500 text-white rounded"
+                >
+                  Batal
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 bg-green-500 text-white rounded"
+                >
+                  Simpan
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
       )}
 
+      {/* Delete Modal */}
       {showDeleteModal && (
-        <DeleteModal
-          item={selectedItem}
-          onClose={() => setShowDeleteModal(false)}
-          onDelete={handleDeleteConfirm}
-        />
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full">
+            <h2 className="text-xl font-bold mb-4">Konfirmasi Hapus</h2>
+            <p className="mb-6">
+              Apakah Anda yakin ingin menghapus {selectedItem.nama}?
+            </p>
+            <div className="flex justify-end gap-4">
+              <button
+                onClick={() => setShowDeleteModal(false)}
+                className="px-4 py-2 bg-gray-500 text-white rounded"
+              >
+                Batal
+              </button>
+              <button
+                onClick={handleDeleteConfirm}
+                className="px-4 py-2 bg-red-500 text-white rounded"
+              >
+                Hapus
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
-      {showAddModal && (
-        <AddModal
-          onClose={() => setShowAddModal(false)}
-          onAdd={handleAddItem}
-        />
-      )}
-
-      {showImagePreview && (
-        <ImagePreviewModal
-          item={selectedItem}
-          onClose={() => setShowImagePreview(false)}
-        />
+      {/* Image Modal */}
+      {showImageModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4">
+          <div className="relative">
+            <button
+              onClick={() => setShowImageModal(false)}
+              className="absolute top-2 right-2 bg-white rounded-full p-2"
+            >
+              <Image size={24} />
+            </button>
+            <img
+              src={selectedItem.gambar}
+              alt={selectedItem.nama}
+              className="max-w-full max-h-[80vh] object-contain"
+            />
+          </div>
+        </div>
       )}
     </div>
   );
